@@ -69,10 +69,9 @@ class MyDatasetV2(torch.utils.data.Dataset):
         self.data = None
         with rioxarray.open_rasterio(f"{root}/landscape/Input_Geotiff.tif") as src:
             self.data = src.where(src != -9999.0, -1)
-            self.max = self.data.max(dim=["x", "y"]).values
-            self.min = self.data.min(dim=["x", "y"]).values
-        for i in range(len(self.max)):
-            self.data[i,:,:] = (self.data[i,:,:] - self.min[i]) / (self.max[i]-self.min[i])
+            self.mean = self.data.mean(dim=["x", "y"])
+            self.std = self.data.std(dim=["x", "y"])
+        self.data = (self.data - self.mean) / self.std
         # Load indices from data generation process
         with open(root + "/indices.json") as f:
             self.indices = json.load(f)
@@ -85,26 +84,28 @@ class MyDatasetV2(torch.utils.data.Dataset):
             self.weathers[item.name.split("/Weathers/")[0]] = pd.read_csv(f'{self.root}/landscape/Weathers/' + item.name)
         
         w_dirs = os.listdir(f"{self.root}/landscape/Weathers")
-        self.max_wd = 0
-        self.max_ws = 0
-        self.min_wd = 100
-        self.min_ws = 100
-        for i in w_dirs:
+        temps = np.zeros((len(w_dirs), 12))
+        wind_speeds = np.zeros((len(w_dirs), 12))
+        wind_directions = np.zeros((len(w_dirs), 12))
+        hums = np.zeros((len(w_dirs), 12))
+        for j, i in enumerate(w_dirs):
             weather = pd.read_csv(f'{self.root}/landscape/Weathers/' + i)
-            for row in weather.iterrows():
-                wd = row[1]["WD"]
-                ws = row[1]["WS"]
-                if wd > self.max_wd:
-                    self.max_wd = wd
-                if ws > self.max_ws:
-                    self.max_ws = ws
-                if wd < self.min_wd:
-                    self.min_wd = wd
-                if ws < self.min_ws:
-                    self.min_ws = ws
+            temps[j] = weather["TM"].values
+            wind_speeds[j] = weather["WS"].values
+            wind_directions[j] = weather["WD"].values
+            hums[j] = weather["RH"].values
+        self.mu_t = temps.mean()
+        self.std_t = temps.std()
+        self.mu_ws = wind_speeds.mean()
+        self.std_ws = wind_speeds.std()
+        self.mu_wd = wind_directions.mean()
+        self.std_wd = wind_directions.std()
+        self.mu_hr = hums.mean()
+        self.std_hr = hums.std()
         
     def __len__(self):
-        return self.n
+        return 1000
+        # return self.n
     
     def __getitem__(self, i):
         fire_number, spread_number = self.keys[i]
@@ -118,18 +119,29 @@ class MyDatasetV2(torch.utils.data.Dataset):
         spread = torch.where(spread[1] == 231, 1.0, 0.0)
         isoc = read_image(f"{self.root}/spreads_400/iso_{fire_number}-{iso_number}.png")
         isoc = torch.where(isoc[1] == 231, 1.0, 0.0).unsqueeze(0)
+        try:
+            input = torch.cat((spread.unsqueeze(0), torch.from_numpy(topology)))
+        except:
+            print(fire_number, spread_number)
+            print(topology.shape)
+            print(spread.shape)
+            print(isoc.shape)
+            print(y - y_, x - x_)
+            raise
         input = torch.cat((spread.unsqueeze(0), torch.from_numpy(topology)))
         # Gets weather data
         n_weather = self.w_history.iloc[int(fire_number)-1].values[0].split("Weathers/")[1]
         weather = self.weathers[n_weather]
         scenario_n = spread_number 
-        wind_speed = (weather.iloc[scenario_n]["WS"] - self.min_ws) / (self.max_ws - self.min_ws)
-        wind_direction = (weather.iloc[scenario_n]["WD"] - self.min_wd) / (self.max_wd - self.min_wd)
-        weather_tensor = torch.Tensor([wind_speed, wind_direction])
+        wind_speed = (weather.iloc[scenario_n]["WS"] - self.mu_ws) / self.std_ws
+        wind_direction = (weather.iloc[scenario_n]["WD"] - self.mu_wd) / self.std_wd
+        temperature = (weather.iloc[scenario_n]["TM"] - self.mu_t) / self.std_t 
+        humidity = (weather.iloc[scenario_n]["RH"] - self.mu_hr) / self.std_hr
+        weather_tensor = torch.Tensor([wind_speed, wind_direction, temperature, humidity])
         if self.transform:
             input = self.transform(input)
             isoc = self.transform(isoc)
-            weather_tensor = self.transform(weather_tensor)
+            # weather_tensor = self.transform(weather_tensor)
         return (fire_number, iso_number), (input, weather_tensor), isoc
 
 class MyDataset(torch.utils.data.Dataset):
@@ -262,5 +274,12 @@ class Normalize(object):
                 image[0] = (image[0] - self.min_ws) / (self.max_ws - self.min_ws)
                 image[1] = (image[1] - self.min_wd) / (self.max_wd - self.min_wd)
             return image
+        
+
+if __name__ == "__main__":
+    dataset = MyDatasetV2("/home/lu/Desktop/Trabajo/deep-crowns-biobio/data")
+    nums, (input, weather), isoc = dataset[0]
+    nums, (input, weather), isoc = dataset[1]
+
     
             
