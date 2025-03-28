@@ -8,6 +8,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 import sys
 sys.path.append("/home/lu/Desktop/Trabajo/deep-crowns-biobio/utils/")
+# sys.path.append("/home/lucas/deep-crowns-biobio/utils/")
 from torch.utils.data import DataLoader
 from utils import MyDataset, Normalize, MyDatasetV2
 from tqdm import tqdm
@@ -26,7 +27,7 @@ import random
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--epochs', type=int, default = 100)
-parser.add_argument('--lr', type=float, default=1e-3)
+parser.add_argument('--lr', type=float, default=1e-4)
 parser.add_argument('--weight_decay', type=float, default=0)
 parser.add_argument('--net', type=str, default="u-net")
 parser.add_argument('--batch_size', type=int, default = 1)
@@ -54,6 +55,7 @@ nets = {
     "u-net-2": U_Net_V2,
 }
 path = "/home/lu/Desktop/Trabajo/deep-crowns-biobio"
+# path = "/home/lucas/deep-crowns-biobio"
 transform = None
 dataset = MyDatasetV2(path + "/data", tform=transform)
 generator = torch.Generator().manual_seed(123)
@@ -121,6 +123,7 @@ for epoch in tqdm(range(epochs)):
     # if early_stopper.early_stop(net.val_epoch_loss):             
     #   print("Early stoppage at epoch:", epoch)
     #   break
+
     writer.add_scalar("Loss/train", net.epoch_loss/net.n, epoch)
     writer.add_scalar("Loss/val", net.val_epoch_loss/net.m, epoch)
     writer.add_scalar("Accuracy/train", accuracy.compute().item(), epoch)
@@ -130,8 +133,17 @@ for epoch in tqdm(range(epochs)):
     writer.add_scalar("Recall/train", recall.compute().item(), epoch)
     writer.add_scalar("Recall/val", recall_val.compute().item(), epoch)
     writer.add_scalar("F1/train", f1.compute().item(), epoch)
-    writer.add_scalar("F1/val", f1_val.compute().item(), epoch)
+    f1_val = f1_val.compute().item()
+    writer.add_scalar("F1/val", f1_val, epoch)
+    # Save best model if val f1 is lower than previous
+    if epoch == 0:
+        best_f1 = f1_val
+    elif f1_val > best_f1:
+        best_f1 = f1_val
+        path_ = f"{path}/src/networks/weights/{net.name}_{epochs}.pth"
+        torch.save(net.state_dict(), path_)
     net.reset_losses()
+
 
 net.plot_loss(epochs=epochs)
 net.finish(epochs)

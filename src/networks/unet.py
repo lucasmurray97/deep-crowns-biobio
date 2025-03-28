@@ -110,8 +110,6 @@ class U_Net(nn.Module):
 
     def finish(self, epochs):
         self.plot_loss(epochs)
-        path_ = f"{self.path}/networks/weights/{self.name}_{epochs}.pth"
-        torch.save(self.state_dict(), path_)
 
     # hook for the gradients of the activations
     def activations_hook(self, grad):
