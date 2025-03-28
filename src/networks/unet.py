@@ -7,7 +7,7 @@ import torch.nn.functional as F
 import numpy as np
 from matplotlib import pyplot as plt
 import sys
-from networks.utils import FocalLoss, DiceLoss, ComboLoss
+from networks.utils import FocalLoss, DiceLoss, ComboLoss, init_weights_xavier
 sys.path.append("../utils/")
 from torch.utils.data import DataLoader
 from utils import MyDatasetV2, Normalize
@@ -20,12 +20,19 @@ class U_Net(nn.Module):
         self.cam = params["cam"]
         self.path = params["path"]
         self.base_model = torch.hub.load('mateuszbuda/brain-segmentation-pytorch', 'unet',
-            in_channels=4, out_channels=1, init_features=256)
+            in_channels=4, out_channels=1, init_features=128)
         self.fcw_1 = nn.Linear(in_features=4, out_features=81)
         self.bn1 = nn.BatchNorm1d(81)
         self.upconv_1 = nn.ConvTranspose2d(in_channels=1, out_channels=1, kernel_size=(3,3), stride=(3,3))
-        self.conv1 = nn.Conv2d(in_channels=4097, out_channels=4096, kernel_size=(1,1), stride=(1,1))
-        self.bn2 = nn.BatchNorm2d(4096)
+        self.conv1 = nn.Conv2d(in_channels=2049, out_channels=2048, kernel_size=(1,1), stride=(1,1))
+        self.bn2 = nn.BatchNorm2d(2048)
+
+        # Initialize weights according to xavier
+        self.fcw_1.apply(init_weights_xavier)
+        self.upconv_1.apply(init_weights_xavier)
+        self.conv1.apply(init_weights_xavier)
+        self.base_model.apply(init_weights_xavier)
+
         # Loss func
         self.loss = []
         self.epoch_loss = 0
