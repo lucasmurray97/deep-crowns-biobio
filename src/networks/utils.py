@@ -74,3 +74,9 @@ class ComboLoss(nn.Module):
 
     def forward(self, preds, targets):
         return self.focal_loss(preds, targets) + self.dice_weight * self.dice_loss(preds, targets)
+
+def init_weights_xavier(m):
+    if isinstance(m, (nn.Conv1d, nn.Conv2d, nn.Linear, nn.ConvTranspose2d)):
+        nn.init.xavier_normal_(m.weight)
+        if m.bias is not None:
+            nn.init.zeros_(m.bias)
