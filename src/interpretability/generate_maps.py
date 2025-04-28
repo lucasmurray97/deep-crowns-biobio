@@ -11,15 +11,16 @@ import torch.nn.functional as F
 import numpy as np
 from matplotlib import pyplot as plt
 import sys
-sys.path.append("/home/lu/Desktop/Trabajo/deep-crowns-biobio/utils/")
-sys.path.append("/home/lu/Desktop/Trabajo/deep-crowns-biobio/src/")
+path = "/home/lu/Desktop/Trabajo/deep-crowns-biobio"
+# path = "/home/lucas/deep-crowns-biobio"
+sys.path.append(path + "/utils/")
+sys.path.append(path + "/src/")
 from utils import MyDatasetV2
 from tqdm import tqdm
 from networks.unet import U_Net
 import numpy as np
 from scipy.ndimage import distance_transform_edt
 
-path = "/home/lu/Desktop/Trabajo/deep-crowns-biobio"
 transform = None
 dataset = MyDatasetV2(path + "/data", tform=transform)
 train_dataset, validation_dataset, test_dataset =torch.utils.data.random_split(dataset, [0.8, 0.1, 0.1])
