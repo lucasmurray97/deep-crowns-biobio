@@ -21,18 +21,6 @@ from networks.unet import U_Net
 import numpy as np
 from scipy.ndimage import distance_transform_edt
 
-transform = None
-dataset = MyDatasetV2(path + "/data", tform=transform)
-train_dataset, validation_dataset, test_dataset =torch.utils.data.random_split(dataset, [0.8, 0.1, 0.1])
-train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=2)
-validation_loader = torch.utils.data.DataLoader(validation_dataset, batch_size=16)
-test_loader = torch.utils.data.DataLoader(train_dataset, batch_size=8)
-
-net = U_Net({"cam": True, "path": path + "/src"})
-net.load_state_dict(torch.load(path+"/src/networks/weights/U-Net_1000.pth"))
-net.cuda()
-net.eval()
-
 def compute_distance_mask(binary_masks, max_distance=50):
     """
     binary_masks: np.ndarray or torch.Tensor of shape (B, H, W), 1 for object, 0 for background
@@ -121,11 +109,20 @@ def compute_GC(model, x, layer):
         # Resize heatmaps to desired size (432x432)
         L_c_grad_CAM = F.interpolate(L_c_grad_CAM, size=(432, 432), mode="bilinear")
 
-    return L_c_grad_CAM.cpu()
-
-# if main
+    return L_c_grad_CAM.cpu(), torch.sigmoid(output.detach().cpu())
 
 if __name__ == "__main__":
+    transform = None
+    dataset = MyDatasetV2(path + "/data", tform=transform)
+    train_dataset, validation_dataset, test_dataset =torch.utils.data.random_split(dataset, [0.8, 0.1, 0.1])
+    train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=1)
+    validation_loader = torch.utils.data.DataLoader(validation_dataset, batch_size=16)
+    test_loader = torch.utils.data.DataLoader(train_dataset, batch_size=8)
+
+    net = U_Net({"cam": True, "path": path + "/src"})
+    net.load_state_dict(torch.load(path+"/src/networks/weights/U-Net_1000.pth"))
+    net.cuda()
+    net.eval()
 
     n = 0
     n_ewes = 0
@@ -138,7 +135,7 @@ if __name__ == "__main__":
         grad = []
         activation = []
         x_i, x_w = x
-        im = compute_GC(net, x, net.base_model.decoder2)
+        im, output = compute_GC(net, x, net.base_model.decoder2)
         im = mask_gradcam_border(im, border_width=5)
         distance_ = compute_distance_mask(y.numpy(), max_distance=50)
         im *= distance_
@@ -149,8 +146,8 @@ if __name__ == "__main__":
             fig.set_figwidth(15)
             ax[1].imshow(im[i][0])
             ax[1].set_title("Heatmap")
-            ax[2].imshow(y[i][0])
-            ax[2].set_title("Prediction")
+            ax[2].imshow(output[i][0])
+            ax[2].set_title("Next state")
             ax[0].imshow(x_i[i][0])
             ax[0].set_title("Previous state")
             if y.sum() * 0.64 >= 100:
