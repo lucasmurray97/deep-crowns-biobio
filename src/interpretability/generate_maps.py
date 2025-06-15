@@ -141,6 +141,7 @@ if __name__ == "__main__":
         im *= distance_
         # plot im and y side by side
         for i in range(im.shape[0]):
+            """
             fig, ax = plt.subplots(1, 3)
             # increase width of the figure
             fig.set_figwidth(15)
@@ -150,31 +151,39 @@ if __name__ == "__main__":
             ax[2].set_title("Next state")
             ax[0].imshow(x_i[i][0])
             ax[0].set_title("Previous state")
-            if y.sum() * 0.64 >= 100:
+            """
+            if y[i].sum() * 0.64 >= 100:
+                """
                 if n_ewes < 100:
                     plt.savefig(f'{path}/src/interpretability/attention_maps_plots/ewes/{idx[0][i].item()}-{idx[1][i].item()}.png')
                     n_ewes += 1
                 # save im as numpy array
                 np.save(f'{path}/src/interpretability/attention_maps/ewes/{idx[0][i].item()}-{idx[1][i].item()}.npy', im[i])
-            elif y.sum() * 0.64 > 100 and y.sum() * 0.64 >= 50:
+                """
+                continue
+            else:
+                print("not ewe")
+                print(y[i].shape)
+            """
+            elif y[i].sum() * 0.64 > 100 and y.sum() * 0.64 >= 50:
                 if n_100 < 100:
                     plt.savefig(f'{path}/src/interpretability/attention_maps_plots/100/{idx[0][i].item()}-{idx[1][i].item()}.png')
                     n_100 += 1
                 # save im as numpy array
                 np.save(f'{path}/src/interpretability/attention_maps/100/{idx[0][i].item()}-{idx[1][i].item()}.npy', im[i])
-            elif y.sum() * 0.64 > 50 and y.sum() * 0.64 >= 20:
+            elif y[i].sum() * 0.64 > 50 and y.sum() * 0.64 >= 20:
                 if n_50 < 100:
                     plt.savefig(f'{path}/src/interpretability/attention_maps_plots/50/{idx[0][i].item()}-{idx[1][i].item()}.png')
                     n_50 += 1
                 # save im as numpy array
                 np.save(f'{path}/src/interpretability/attention_maps/50/{idx[0][i].item()}-{idx[1][i].item()}.npy', im[i])
-            elif y.sum() * 0.64 > 20 and y.sum() * 0.64 >= 10:
+            elif y[i].sum() * 0.64 > 20 and y.sum() * 0.64 >= 10:
                 if n_20 < 100:
                     plt.savefig(f'{path}/src/interpretability/attention_maps_plots/20/{idx[0][i].item()}-{idx[1][i].item()}.png')
                     n_20 += 1
                 # save im as numpy array
                 np.save(f'{path}/src/interpretability/attention_maps/20/{idx[0][i].item()}-{idx[1][i].item()}.npy', im[i])
-            elif y.sum() * 0.64 > 10 and y.sum() * 0.64 >= 5:
+            elif y[i].sum() * 0.64 > 10 and y.sum() * 0.64 >= 5:
                 if n_10 < 100:
                     plt.savefig(f'{path}/src/interpretability/attention_maps_plots/10/{idx[0][i].item()}-{idx[1][i].item()}.png')
                     n_10 += 1
@@ -188,3 +197,4 @@ if __name__ == "__main__":
                 np.save(f'{path}/src/interpretability/attention_maps/5/{idx[0][i].item()}-{idx[1][i].item()}.npy', im[i])
             plt.close()
             n += 1
+            """
