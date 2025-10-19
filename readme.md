@@ -8,6 +8,18 @@ This project focuses on applying interpretability techniques, such as Grad-CAM, 
 
 Wildfires are a significant environmental hazard, and understanding the conditions that lead to extreme wildfire events is crucial for prevention and mitigation. This project leverages a U-Net based model to predict wildfire spread and employs interpretability techniques to gain insights into the model's decision-making process.
 
+## Project Structure
+```
+├── data/                         # Data preprocessing and helpers
+├── src/                          # Source code
+│   ├── interpretability/         # Saliency map–based interpretability
+│   ├── networks/                 # Code for all networks used
+│   ├── plots/                    # Training plots
+│   └── train.py                  # Training script for the models
+└── utils/                        # Shared utilities
+    └── utils.py                  # Datasets and utility functions
+```
+
 ## Installation
 
 To get started, clone the repository and install the required dependencies:
