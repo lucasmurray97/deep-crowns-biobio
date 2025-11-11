@@ -104,8 +104,7 @@ class MyDatasetV2(torch.utils.data.Dataset):
         self.std_hr = hums.std()
         
     def __len__(self):
-        return 1000
-        # return self.n
+        return self.n
     
     def __getitem__(self, i):
         fire_number, spread_number = self.keys[i]
